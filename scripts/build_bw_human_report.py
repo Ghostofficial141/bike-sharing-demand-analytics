@@ -45,12 +45,12 @@ def to_grayscale_png_bytes(img_path: Path) -> bytes:
 
 
 def fig_tag(fname: str, fig_num: int, caption: str) -> str:
-    """Return an HTML <figure> with pure black-and-white base64 image and academic caption."""
+    """Return an HTML <figure> with full-color base64 plot image and monochrome academic caption."""
     img_path = config.FIGURES_DIR / fname
     if not img_path.exists():
         return ""
-    bw_bytes = to_grayscale_png_bytes(img_path)
-    b64 = base64.b64encode(bw_bytes).decode("ascii")
+    raw_bytes = img_path.read_bytes()
+    b64 = base64.b64encode(raw_bytes).decode("ascii")
     return f"""
     <figure class="report-fig">
       <img src="data:image/png;base64,{b64}" alt="Figure {fig_num}"/>
@@ -250,7 +250,6 @@ def build_html() -> str:
     max-width: 98%;
     height: auto;
     border: 0.75px solid #000000;
-    filter: grayscale(100%);
   }}
   .report-fig figcaption {{
     font-size: 9.5pt;

@@ -8,13 +8,16 @@ This guide provides step-by-step instructions for **HR reviewers**, **technical 
 
 If you want to review the complete business investigation, methodology, embedded charts, statistical results, and interview talking points immediately without running Python:
 
-1. **Microsoft Word Submission Dossier (`.docx` / `.doc`):**
-   - Double-click **`HR_and_Tech_Submission_Dossier.docx`** (or **`HR_and_Tech_Submission_Dossier.doc`**) in the root folder (also available inside `reports/`).
-   - Opens in Microsoft Word, Google Docs, or LibreOffice with all 9 charts and tables embedded.
+1. **Print-Ready PDF Dossier (`.pdf`):**
+   - Double-click **`HR_and_Tech_Submission_Dossier.pdf`** in the root folder (also in `reports/HR_and_Tech_Submission_Dossier.pdf`).
+   - Contains all 12 high-resolution charts, mathematical formula reference cards, architecture diagram, and formatted tables across 17 pages.
 2. **Self-Contained Web Report (`.html`):**
-   - Double-click **`reports/HR_and_Tech_Submission_Dossier.html`**.
-   - Opens in any web browser (Chrome, Edge, Firefox, Safari) with all charts embedded—no internet connection or server required.
-3. **Markdown Reports (in GitHub or VS Code):**
+   - Double-click **`HR_and_Tech_Submission_Dossier.html`** in the root folder (or **`reports/HR_and_Tech_Submission_Dossier.html`**).
+   - Opens in any web browser (Chrome, Edge, Firefox, Safari) with all 12 charts and equation cards embedded as base64—no internet connection or server required.
+3. **Microsoft Word Submission Dossier (`.docx` / `.doc`):**
+   - Double-click **`HR_and_Tech_Submission_Dossier.docx`** (or **`HR_and_Tech_Submission_Dossier.doc`**) in the root folder (also available inside `reports/`).
+   - Opens in Microsoft Word, Google Docs, or LibreOffice with all 12 charts, mathematical formula cards, and tables embedded.
+4. **Markdown Reports (in GitHub or VS Code):**
    - `reports/HR_and_Tech_Submission_Dossier.md` — Full technical and executive submission dossier.
    - `reports/final_findings.md` — Summary of empirical findings, limitations, and citations.
    - `reports/data_quality_report.md` — Output of all 26 automated data quality checks.
@@ -171,3 +174,4 @@ Expected output:
     ```
 - **Matplotlib cache warning on Windows:**
   - Set `$env:MPLCONFIGDIR="$PWD\.mplcache"` before running plotting scripts if your Windows user profile restricts writing to `C:\Users\<user>\.matplotlib`.
+

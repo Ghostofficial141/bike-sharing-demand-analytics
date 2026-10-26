@@ -1,8 +1,10 @@
-"""Build workspace copies of the HR & Tech Submission Dossier (.md and standalone .html with embedded charts)."""
+"""Build workspace copies of the HR & Tech Submission Dossier (.md, standalone .html, and print-ready .pdf with embedded charts and formula cards)."""
 from __future__ import annotations
 
 import base64
 import re
+import shutil
+import subprocess
 import sys
 from pathlib import Path
 
@@ -17,6 +19,33 @@ ARTIFACT_MD = Path(
 )
 TARGET_MD = config.REPORTS_DIR / "HR_and_Tech_Submission_Dossier.md"
 TARGET_HTML = config.REPORTS_DIR / "HR_and_Tech_Submission_Dossier.html"
+ROOT_HTML = ROOT / "HR_and_Tech_Submission_Dossier.html"
+TARGET_PDF = config.REPORTS_DIR / "HR_and_Tech_Submission_Dossier.pdf"
+ROOT_PDF = ROOT / "HR_and_Tech_Submission_Dossier.pdf"
+
+
+def _export_pdf_via_browser(html_path: Path, pdf_path: Path) -> bool:
+    """Use headless Chrome or Edge to render the standalone HTML to a vector PDF."""
+    browsers = [
+        Path(r"C:\Program Files\Google\Chrome\Application\chrome.exe"),
+        Path(r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"),
+    ]
+    html_uri = html_path.resolve().as_uri()
+    for browser in browsers:
+        if not browser.exists():
+            continue
+        cmd = [
+            str(browser),
+            "--headless=new",
+            "--disable-gpu",
+            "--no-pdf-header-footer",
+            f"--print-to-pdf={pdf_path.resolve()}",
+            html_uri,
+        ]
+        res = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+        if pdf_path.exists() and pdf_path.stat().st_size > 10_000:
+            return True
+    return False
 
 
 def build() -> None:
@@ -31,7 +60,7 @@ def build() -> None:
 
     # Build a clean standalone HTML with embedded base64 images
     html_body = workspace_md
-    # Embed PNG images as base64 data URIs
+
     def _embed_img(match: re.Match) -> str:
         alt, fname = match.group(1), match.group(2)
         img_path = config.FIGURES_DIR / fname
@@ -45,7 +74,7 @@ def build() -> None:
 
     html_body = re.sub(r"!\[([^\]]*)\]\(\.\./outputs/figures/([^)]+\.png)\)", _embed_img, html_body)
 
-    # Convert basic markdown blocks to clean HTML for standalone viewing
+    # Convert markdown blocks to clean HTML for standalone viewing & PDF printing
     lines = html_body.splitlines()
     out_lines: list[str] = []
     in_table = False
@@ -81,7 +110,11 @@ def build() -> None:
                     out_lines.append("</ul>")
                     in_list = False
                 in_table = True
-                out_lines.append("<table><thead><tr>" + "".join(f"<th>{_inline(c)}</th>" for c in cells) + "</tr></thead><tbody>")
+                out_lines.append(
+                    "<table><thead><tr>"
+                    + "".join(f"<th>{_inline(c)}</th>" for c in cells)
+                    + "</tr></thead><tbody>"
+                )
             else:
                 out_lines.append("<tr>" + "".join(f"<td>{_inline(c)}</td>" for c in cells) + "</tr>")
             continue
@@ -91,15 +124,18 @@ def build() -> None:
 
         if line.startswith("# "):
             if in_list:
-                out_lines.append("</ul>"); in_list = False
+                out_lines.append("</ul>")
+                in_list = False
             out_lines.append(f"<h1>{_inline(line[2:])}</h1>")
         elif line.startswith("## "):
             if in_list:
-                out_lines.append("</ul>"); in_list = False
+                out_lines.append("</ul>")
+                in_list = False
             out_lines.append(f"<h2>{_inline(line[3:])}</h2>")
         elif line.startswith("### "):
             if in_list:
-                out_lines.append("</ul>"); in_list = False
+                out_lines.append("</ul>")
+                in_list = False
             out_lines.append(f"<h3>{_inline(line[4:])}</h3>")
         elif line.strip().startswith("- ") or re.match(r"^\d+\.\s+", line.strip()):
             if not in_list:
@@ -111,11 +147,13 @@ def build() -> None:
             out_lines.append(f"<blockquote>{_inline(line[1:].strip())}</blockquote>")
         elif line.strip() == "---":
             if in_list:
-                out_lines.append("</ul>"); in_list = False
+                out_lines.append("</ul>")
+                in_list = False
             out_lines.append("<hr/>")
         elif line.strip().startswith("<figure>"):
             if in_list:
-                out_lines.append("</ul>"); in_list = False
+                out_lines.append("</ul>")
+                in_list = False
             out_lines.append(line)
         elif line.strip():
             out_lines.append(f"<p>{_inline(line)}</p>")
@@ -131,23 +169,32 @@ def build() -> None:
 <meta charset="utf-8"/>
 <title>Technical & Executive Submission Dossier — Capital Bikeshare Demand Analytics</title>
 <style>
+  @page {{ size: A4; margin: 14mm 14mm 14mm 14mm; }}
   body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
-         max-width: 1060px; margin: 36px auto; padding: 0 24px; color: #1e293b; line-height: 1.6; }}
-  h1 {{ color: #0f172a; border-bottom: 3px solid #2563eb; padding-bottom: 10px; }}
-  h2 {{ color: #1e3a8a; margin-top: 34px; border-bottom: 1px solid #cbd5e1; padding-bottom: 6px; }}
-  h3 {{ color: #334155; margin-top: 24px; }}
-  table {{ border-collapse: collapse; width: 100%; margin: 18px 0; font-size: 0.94rem; }}
-  th, td {{ border: 1px solid #cbd5e1; padding: 9px 12px; text-align: left; vertical-align: top; }}
+         max-width: 1060px; margin: 32px auto; padding: 0 24px; color: #1e293b; line-height: 1.58;
+         -webkit-print-color-adjust: exact; print-color-adjust: exact; }}
+  h1 {{ color: #0f172a; border-bottom: 3px solid #2563eb; padding-bottom: 10px; font-size: 1.75rem; }}
+  h2 {{ color: #1e3a8a; margin-top: 30px; border-bottom: 1px solid #cbd5e1; padding-bottom: 6px;
+       font-size: 1.32rem; page-break-after: avoid; break-after: avoid; }}
+  h3 {{ color: #334155; margin-top: 20px; font-size: 1.08rem; page-break-after: avoid; break-after: avoid; }}
+  table {{ border-collapse: collapse; width: 100%; margin: 16px 0; font-size: 0.88rem; page-break-inside: auto; }}
+  tr {{ page-break-inside: avoid; break-inside: avoid; }}
+  th, td {{ border: 1px solid #cbd5e1; padding: 7px 10px; text-align: left; vertical-align: top; }}
   th {{ background: #f1f5f9; font-weight: 600; color: #0f172a; }}
   tr:nth-child(even) td {{ background: #f8fafc; }}
-  code {{ background: #f1f5f9; padding: 2px 5px; border-radius: 4px; font-size: 0.9em; }}
-  pre {{ background: #0f172a; color: #f8fafc; padding: 14px; border-radius: 6px; overflow-x: auto; }}
+  code {{ background: #f1f5f9; padding: 1px 5px; border-radius: 4px; font-size: 0.88em; color: #1e3a8a; }}
+  pre {{ background: #0f172a; color: #f8fafc; padding: 12px; border-radius: 6px; overflow-x: auto; }}
   pre code {{ background: transparent; color: inherit; }}
-  blockquote {{ border-left: 4px solid #2563eb; background: #eff6ff; margin: 14px 0; padding: 10px 16px; }}
-  figure {{ margin: 22px 0; text-align: center; }}
+  blockquote {{ border-left: 4px solid #2563eb; background: #eff6ff; margin: 12px 0; padding: 10px 16px;
+               page-break-inside: avoid; break-inside: avoid; }}
+  figure {{ margin: 18px 0; text-align: center; page-break-inside: avoid; break-inside: avoid; }}
   figure img {{ max-width: 100%; height: auto; border: 1px solid #e2e8f0; border-radius: 6px; }}
-  figcaption {{ font-size: 0.9rem; color: #475569; margin-top: 6px; font-style: italic; }}
-  hr {{ border: 0; border-top: 1px solid #cbd5e1; margin: 28px 0; }}
+  figcaption {{ font-size: 0.86rem; color: #475569; margin-top: 5px; font-style: italic; }}
+  hr {{ border: 0; border-top: 1px solid #cbd5e1; margin: 24px 0; }}
+  @media print {{
+    body {{ margin: 0; padding: 0; max-width: 100%; font-size: 10pt; }}
+    figure img {{ max-height: 210mm; }}
+  }}
 </style>
 </head>
 <body>
@@ -156,10 +203,18 @@ def build() -> None:
 </html>
 """
     TARGET_HTML.write_text(full_html, encoding="utf-8")
+    shutil.copy2(TARGET_HTML, ROOT_HTML)
     print(f"Wrote {TARGET_MD} ({TARGET_MD.stat().st_size:,} bytes)")
     print(f"Wrote {TARGET_HTML} ({TARGET_HTML.stat().st_size:,} bytes)")
+    print(f"Wrote {ROOT_HTML} ({ROOT_HTML.stat().st_size:,} bytes)")
+
+    if _export_pdf_via_browser(TARGET_HTML, TARGET_PDF):
+        shutil.copy2(TARGET_PDF, ROOT_PDF)
+        print(f"Wrote {TARGET_PDF} ({TARGET_PDF.stat().st_size:,} bytes)")
+        print(f"Wrote {ROOT_PDF} ({ROOT_PDF.stat().st_size:,} bytes)")
+    else:
+        print("Browser headless PDF export failed in current mode; will retry or use fallback.")
 
 
 if __name__ == "__main__":
     build()
-

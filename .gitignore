@@ -8,3 +8,4 @@ sbx_test/
 time-series-master/
 reference/
 ~$*
+*_updated.*

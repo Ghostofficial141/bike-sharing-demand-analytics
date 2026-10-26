@@ -239,8 +239,13 @@ def build_docx() -> None:
     if table_buffer:
         _flush_table(doc, table_buffer)
 
-    doc.save(str(DOCX_REPORT))
-    shutil.copy2(DOCX_REPORT, DOCX_ROOT)
+    for target in (DOCX_REPORT, DOCX_ROOT):
+        try:
+            doc.save(str(target))
+        except PermissionError:
+            alt = target.with_name(target.stem + "_updated" + target.suffix)
+            doc.save(str(alt))
+            print(f"Note: {target} is open in Word; saved updated copy to {alt}")
 
 
 def build_word_doc() -> None:
@@ -256,8 +261,13 @@ def build_word_doc() -> None:
         "<head><!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View>"
         "<w:Zoom>100</w:Zoom><w:DoNotOptimizeForBrowser/></w:WordDocument></xml><![endif]-->",
     )
-    DOC_REPORT.write_text(word_html, encoding="utf-8")
-    shutil.copy2(DOC_REPORT, DOC_ROOT)
+    for target in (DOC_REPORT, DOC_ROOT):
+        try:
+            target.write_text(word_html, encoding="utf-8")
+        except PermissionError:
+            alt = target.with_name(target.stem + "_updated" + target.suffix)
+            alt.write_text(word_html, encoding="utf-8")
+            print(f"Note: {target} is open in Word; saved updated copy to {alt}")
 
 
 if __name__ == "__main__":
